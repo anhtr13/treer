@@ -1,0 +1,15 @@
+[package]
+name = "treer"
+version = "0.1.0"
+edition = "2024"
+authors = ["anhtr13 <anhtr13@proton.me>"]
+description = "Simple tree command written in rust."
+keywords = ["tree", "cli", "utility"]
+categories = ["command-line-utilities"]
+license = "MIT"
+homepage = "https://github.com/anhtr13/treer"
+repository = "https://github.com/anhtr13/treer"
+
+[dependencies]
+clap = { version = "4.5.54", features = ["derive"] }
+glob = "0.3.3"
