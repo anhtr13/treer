@@ -29,10 +29,10 @@ fn should_skip_entry(entry: &fs::DirEntry, opts: &Opts) -> std::io::Result<bool>
         return Ok(true);
     }
 
-    if let Some(pattern) = &opts.pattern {
-        if !file_name.is_some_and(|name| pattern.matches(name)) {
-            return Ok(true);
-        }
+    if let Some(pattern) = &opts.pattern
+        && !file_name.is_some_and(|name| pattern.matches(name))
+    {
+        return Ok(true);
     }
 
     Ok(false)
@@ -191,6 +191,8 @@ fn climb_tree(
         found_content = true;
 
         if entry.file_type()?.is_dir() {
+            stats.0 += 1;
+
             if let Some(max_level) = opts.level
                 && depth + 1 >= max_level as usize
             {

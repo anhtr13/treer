@@ -45,7 +45,7 @@ pub struct Cmd {
     pub full_path: bool,
 
     #[arg(
-        short = 'l',
+        short = 'L',
         long = "level",
         help = "Descend only level directories deep."
     )]
