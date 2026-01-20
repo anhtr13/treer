@@ -21,7 +21,7 @@ fn should_skip_entry(entry: &fs::DirEntry, opts: &Opts) -> std::io::Result<bool>
     let file_name = path.file_name().and_then(|name| name.to_str());
 
     let is_hidden = file_name.map(|name| name.starts_with('.')).unwrap_or(false);
-    if !opts.all_files && is_hidden {
+    if !opts.show_hidden && is_hidden {
         return Ok(true);
     }
 
@@ -235,4 +235,78 @@ pub fn print_tree(path: &Path, opts: &Opts) -> std::io::Result<()> {
     )?;
 
     writer.flush()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_climb_tree() {
+        let opts: Opts = Default::default();
+        let path = Path::new("test");
+
+        let mut writer = Vec::new();
+        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
+
+        let result = String::from_utf8(writer).unwrap();
+        let expected = "├──  dir\n│   ├── 󰈙 file3.txt\n│   └── 󰈙 file4.txt\n├── 󰈙 file1.txt\n└── 󰈙 file2.txt\n";
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_show_hidden() {
+        let mut opts: Opts = Default::default();
+        opts.show_hidden = true;
+        let path = Path::new("test");
+
+        let mut writer = Vec::new();
+        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
+
+        let result = String::from_utf8(writer).unwrap();
+        let expected = "├──  dir\n│   ├── 󰈙 file3.txt\n│   └── 󰈙 file4.txt\n├── 󰈙 .hidden.txt\n├── 󰈙 file1.txt\n└── 󰈙 file2.txt\n";
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_match_pattern() {
+        let mut opts: Opts = Default::default();
+        opts.pattern = Some(glob::Pattern::new("*2.txt").unwrap());
+        let path = Path::new("test");
+
+        let mut writer = Vec::new();
+        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
+
+        let result = String::from_utf8(writer).unwrap();
+        let expected = "└── 󰈙 file2.txt\n";
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_max_level() {
+        let mut opts: Opts = Default::default();
+        opts.level = Some(1);
+        let path = Path::new("test");
+
+        let mut writer = Vec::new();
+        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
+
+        let result = String::from_utf8(writer).unwrap();
+        let expected = "├──  dir\n├── 󰈙 file1.txt\n└── 󰈙 file2.txt\n";
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_ascii() {
+        let mut opts: Opts = Default::default();
+        opts.ascii = true;
+        let path = Path::new("test");
+
+        let mut writer = Vec::new();
+        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
+
+        let result = String::from_utf8(writer).unwrap();
+        let expected = "|--- dir\n|   |---󰈙 file3.txt\n|   +---󰈙 file4.txt\n|---󰈙 file1.txt\n+---󰈙 file2.txt\n";
+        assert_eq!(result, expected);
+    }
 }

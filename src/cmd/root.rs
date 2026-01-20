@@ -9,9 +9,9 @@ pub fn parse_glob_pattern(s: &str) -> Result<Pattern, String> {
     Pattern::new(s).map_err(|err| err.to_string())
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct Opts {
-    pub all_files: bool,
+    pub show_hidden: bool,
     pub ascii: bool,
     pub full_path: bool,
     pub dir_only: bool,
@@ -30,7 +30,7 @@ pub struct Cmd {
     pub path: String,
 
     #[arg(short = 'a', long = "all", help = "Include hidden files.")]
-    pub all_files: bool,
+    pub show_hidden: bool,
 
     #[arg(short = 'A', long = "ascii", help = "Use ascii characters to indent.")]
     pub ascii: bool,
@@ -83,7 +83,7 @@ impl Cmd {
             .map(|p| parse_glob_pattern(p))
             .transpose()?;
         Ok(Opts {
-            all_files: self.all_files,
+            show_hidden: self.show_hidden,
             ascii: self.ascii,
             full_path: self.full_path,
             dir_only: self.dir_only,
