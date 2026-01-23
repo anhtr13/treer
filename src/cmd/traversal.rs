@@ -29,6 +29,12 @@ fn should_skip_entry(entry: &fs::DirEntry, opts: &Opts) -> std::io::Result<bool>
         return Ok(true);
     }
 
+    for exclude_pattern in opts.exclude_patterns.iter() {
+        if file_name.is_some_and(|name| exclude_pattern.matches(name)) {
+            return Ok(true);
+        }
+    }
+
     if let Some(pattern) = &opts.pattern
         && !file_name.is_some_and(|name| pattern.matches(name))
     {
@@ -279,6 +285,23 @@ mod tests {
 
         let result = String::from_utf8(writer).unwrap();
         let expected = "└── 󰈙 file2.txt\n";
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_exclude_patterns() {
+        let mut opts: Opts = Default::default();
+        opts.exclude_patterns = vec![
+            glob::Pattern::new("*2.txt").unwrap(),
+            glob::Pattern::new("*3.txt").unwrap(),
+        ];
+        let path = Path::new("test");
+
+        let mut writer = Vec::new();
+        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
+
+        let result = String::from_utf8(writer).unwrap();
+        let expected = "├──  dir\n│   └── 󰈙 file4.txt\n└── 󰈙 file1.txt\n";
         assert_eq!(result, expected);
     }
 

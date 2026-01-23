@@ -5,14 +5,11 @@ use glob::Pattern;
 
 use crate::cmd::traversal::print_tree;
 
-pub fn parse_glob_pattern(s: &str) -> Result<Pattern, String> {
-    Pattern::new(s).map_err(|err| err.to_string())
-}
-
 #[derive(Default, Debug)]
 pub struct Opts {
     pub show_hidden: bool,
     pub ascii: bool,
+    pub exclude_patterns: Vec<Pattern>,
     pub full_path: bool,
     pub dir_only: bool,
     pub last_modify: bool,
@@ -54,6 +51,13 @@ pub struct Cmd {
     #[arg(short = 'i', long = "no-indent", help = "Disable indentation.")]
     pub no_indent: bool,
 
+    #[arg(
+        short = 'I',
+        long = "exclude",
+        help = "Ignore files/folders that match the wild-card pattern. May have multiple -I options."
+    )]
+    pub exclude: Vec<String>,
+
     #[arg(short = 's', long = "size", help = "Print file size.")]
     pub print_size: bool,
 
@@ -75,35 +79,43 @@ pub struct Cmd {
     pub sort_by_time: bool,
 }
 
-impl Cmd {
-    pub fn to_opts(&self) -> Result<Opts, String> {
-        let glob_pattern: Option<Pattern> = self
-            .pattern
-            .as_ref()
-            .map(|p| parse_glob_pattern(p))
-            .transpose()?;
-        Ok(Opts {
-            show_hidden: self.show_hidden,
-            ascii: self.ascii,
-            full_path: self.full_path,
-            dir_only: self.dir_only,
-            print_permissions: self.print_permissions,
-            last_modify: self.last_modify,
-            level: self.level,
-            no_indent: self.no_indent,
-            print_size: self.print_size,
-            pattern: glob_pattern,
-            sort_by_time: self.sort_by_time,
-        })
-    }
+fn parse_glob_pattern(s: &str) -> Result<Pattern, String> {
+    Pattern::new(s).map_err(|err| err.to_string())
+}
+
+fn cmd_to_opts(cmd: &Cmd) -> Result<Opts, String> {
+    let glob_pattern: Option<Pattern> = cmd
+        .pattern
+        .as_ref()
+        .map(|p| parse_glob_pattern(p))
+        .transpose()?;
+    let exclude_patterns: Vec<Pattern> = cmd
+        .exclude
+        .iter()
+        .map(|p| parse_glob_pattern(p))
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(Opts {
+        show_hidden: cmd.show_hidden,
+        ascii: cmd.ascii,
+        exclude_patterns,
+        full_path: cmd.full_path,
+        dir_only: cmd.dir_only,
+        print_permissions: cmd.print_permissions,
+        last_modify: cmd.last_modify,
+        level: cmd.level,
+        no_indent: cmd.no_indent,
+        print_size: cmd.print_size,
+        pattern: glob_pattern,
+        sort_by_time: cmd.sort_by_time,
+    })
 }
 
 pub fn run() -> io::Result<()> {
-    let cli = Cmd::parse();
-    let opts = cli.to_opts().map_err(|e| {
+    let cmd = Cmd::parse();
+    let opts = cmd_to_opts(&cmd).map_err(|e| {
         io::Error::new(io::ErrorKind::InvalidInput, format!("Invalid pattern: {e}"))
     })?;
 
-    let root_path = Path::new(&cli.path);
+    let root_path = Path::new(&cmd.path);
     print_tree(&root_path, &opts)
 }
