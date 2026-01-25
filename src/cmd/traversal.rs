@@ -1,5 +1,6 @@
 use std::{
-    fs,
+    collections::HashSet,
+    fs::{self, DirEntry},
     io::{self, BufWriter, Write},
     os::unix::fs::PermissionsExt,
     path::Path,
@@ -12,40 +13,73 @@ use crate::cmd::{
 };
 
 struct EntryInfo {
-    entry: fs::DirEntry,
+    entry: DirEntry,
     last_modify: io::Result<SystemTime>,
 }
 
-fn should_skip_entry(entry: &fs::DirEntry, opts: &Opts) -> std::io::Result<bool> {
-    let path = entry.path();
-    let file_name = path.file_name().and_then(|name| name.to_str());
+fn add_entry_to_display_set(
+    root: &DirEntry,
+    opts: &Opts,
+    depth: usize,
+    ancestors_matched_pattern: bool,
+    display_entries: &mut HashSet<String>,
+) -> bool {
+    let path = root.path();
+    let name = path.file_name().and_then(|name| name.to_str());
 
-    let is_hidden = file_name.map(|name| name.starts_with('.')).unwrap_or(false);
+    let is_hidden = name.map(|name| name.starts_with('.')).unwrap_or(false);
     if !opts.show_hidden && is_hidden {
-        return Ok(true);
+        return false;
     }
 
     if opts.dir_only && !path.is_dir() {
-        return Ok(true);
+        return false;
+    }
+
+    if let Some(max_level) = opts.level
+        && depth > max_level as usize
+    {
+        return false;
     }
 
     for exclude_pattern in opts.exclude_patterns.iter() {
-        if file_name.is_some_and(|name| exclude_pattern.matches(name)) {
-            return Ok(true);
+        if name.is_some_and(|name| exclude_pattern.matches(name)) {
+            return false;
         }
     }
 
-    if let Some(pattern) = &opts.pattern
-        && !file_name.is_some_and(|name| pattern.matches(name))
-    {
-        return Ok(true);
+    let mut should_display = true;
+    let mut matched_pattern = ancestors_matched_pattern;
+
+    if let Some(pattern) = &opts.pattern {
+        if !name.is_some_and(|name| pattern.matches(name)) {
+            // if name is not match pattern but ancestors are matched pattern => still display
+            should_display = ancestors_matched_pattern;
+        } else {
+            matched_pattern = true;
+        }
     }
 
-    Ok(false)
+    if path.is_dir()
+        && let read_dir = fs::read_dir(&path)
+        && let Ok(reader) = read_dir
+    {
+        reader.filter_map(Result::ok).for_each(|dir| {
+            // if descendants are matched pattern => still display
+            should_display |=
+                add_entry_to_display_set(&dir, opts, depth + 1, matched_pattern, display_entries);
+        });
+    }
+
+    if should_display {
+        display_entries.insert(path.display().to_string());
+    }
+
+    should_display
 }
 
 fn format_entry_line(
-    entry: &fs::DirEntry,
+    entry: &DirEntry,
     opts: &Opts,
     indent_state: &[bool],
     is_last: bool,
@@ -93,12 +127,14 @@ fn format_entry_line(
                 "mp3" | "wav" | "flac" | "aac" | "ogg" => line.push_str("󰈣 "),
                 "mp4" | "avi" | "mov" | "wmv" | "flv" | "webm" | "mkv" => line.push_str("󰈫 "),
                 "zip" | "rar" | "tar" | "7z" | "gz" | "xz" => line.push_str(" "),
-                "txt" | "xml" | "yml" | "yaml" => line.push_str("󰈙 "),
+                "md" | "txt" | "xml" | "yml" | "yaml" => line.push_str("󰈙 "),
                 "lock" | "key" | "pem" | "crt" | "p12" | "pfx" => line.push_str("󱆄 "),
                 "toml" | "ini" | "cfg" | "conf" => line.push_str("󱁻 "),
                 "json" | "csv" | "log" | "sql" => line.push_str("󰱾 "),
                 &_ => line.push_str("󰈔 "),
             }
+        } else {
+            line.push_str("󰈔 ");
         }
     }
 
@@ -134,42 +170,29 @@ fn format_entry_line(
     Ok(line)
 }
 
-fn climb_tree(
+fn traverse_directory(
     writer: &mut dyn Write,
     path: &Path,
     opts: &Opts,
-    depth: usize,
+    display_entries: &HashSet<String>,
     stats: &mut (u64, u64),
     indent_state: &[bool],
 ) -> std::io::Result<bool> {
-    let read_dir_result = fs::read_dir(path);
-    let mut entries_info: Vec<EntryInfo> = match read_dir_result {
-        Ok(reader) => reader
-            .filter_map(Result::ok)
-            .filter(|entry| match should_skip_entry(entry, opts) {
-                Ok(skip) => !skip,
-                Err(e) => {
-                    eprintln!("Could not apply filter to entry {:?}: {}", entry.path(), e);
-                    false
-                }
-            })
-            .map(|entry| {
-                let last_modify = entry.metadata().and_then(|m| m.modified());
-                if let Err(e) = &last_modify {
-                    eprintln!(
-                        "Warning: Could not get metadata/last_modify for {:?}: {}",
-                        entry.path(),
-                        e
-                    );
-                }
-                EntryInfo { entry, last_modify }
-            })
-            .collect(),
-        Err(e) => {
-            eprintln!("Error reading directory {path:?}: {e}");
-            return Err(e);
-        }
-    };
+    let mut entries_info: Vec<EntryInfo> = fs::read_dir(path)?
+        .filter_map(Result::ok)
+        .filter(|entry| display_entries.contains(&entry.path().display().to_string()))
+        .map(|entry| {
+            let last_modify = entry.metadata().and_then(|m| m.modified());
+            if let Err(e) = &last_modify {
+                eprintln!(
+                    "Warning: Could not get metadata/last_modify for {:?}: {}",
+                    entry.path(),
+                    e
+                );
+            }
+            EntryInfo { entry, last_modify }
+        })
+        .collect();
 
     let (mut dirs, mut files): (Vec<EntryInfo>, Vec<EntryInfo>) = std::mem::take(&mut entries_info)
         .into_iter()
@@ -213,15 +236,16 @@ fn climb_tree(
         if entry.file_type()?.is_dir() {
             stats.0 += 1;
 
-            if let Some(max_level) = opts.level
-                && depth + 1 >= max_level as usize
-            {
-                continue;
-            }
-
             let mut next_indent_state = indent_state.to_vec();
             next_indent_state.push(is_last_entry);
-            climb_tree(writer, &path, opts, depth + 1, stats, &next_indent_state)?;
+            traverse_directory(
+                writer,
+                &path,
+                opts,
+                &display_entries,
+                stats,
+                &next_indent_state,
+            )?;
         }
     }
     Ok(found_content)
@@ -229,6 +253,26 @@ fn climb_tree(
 
 pub fn print_tree(path: &Path, opts: &Opts) -> std::io::Result<()> {
     let mut writer = Box::new(BufWriter::new(io::stdout()));
+    print_tree_with_writer(path, opts, &mut writer)
+}
+
+pub fn print_tree_with_writer(
+    path: &Path,
+    opts: &Opts,
+    writer: &mut dyn Write,
+) -> std::io::Result<()> {
+    let mut display_entries = HashSet::new();
+    let reader = match fs::read_dir(path) {
+        Ok(reader) => reader,
+        Err(e) => {
+            eprintln!("Error reading directory {path:?}: {e}");
+            return Err(e);
+        }
+    };
+    reader.filter_map(Result::ok).for_each(|entry| {
+        add_entry_to_display_set(&entry, opts, 1, false, &mut display_entries);
+    });
+
     let display_path = if opts.full_path {
         path.canonicalize()?.display().to_string()
     } else {
@@ -240,7 +284,7 @@ pub fn print_tree(path: &Path, opts: &Opts) -> std::io::Result<()> {
 
     let mut stats = (0, 0); // count dirs, count files
     writeln!(writer, "{display_path}")?;
-    climb_tree(&mut writer, path, opts, 0, &mut stats, &[])?;
+    traverse_directory(writer, path, opts, &display_entries, &mut stats, &[])?;
 
     let dir_str = if stats.0 == 1 {
         "directory"
@@ -253,97 +297,5 @@ pub fn print_tree(path: &Path, opts: &Opts) -> std::io::Result<()> {
         "\n{} {}, {} {}",
         stats.0, dir_str, stats.1, file_str
     )?;
-
-    writer.flush()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_climb_tree() {
-        let opts: Opts = Default::default();
-        let path = Path::new("test_dir");
-
-        let mut writer = Vec::new();
-        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
-
-        let result = String::from_utf8(writer).unwrap();
-        let expected = "├──  sub_dir\n│   ├── 󰈙 file3.txt\n│   └── 󰈙 file4.txt\n├── 󰈙 file1.txt\n└── 󰈙 file2.txt\n";
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_show_hidden() {
-        let mut opts: Opts = Default::default();
-        opts.show_hidden = true;
-        let path = Path::new("test_dir");
-
-        let mut writer = Vec::new();
-        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
-
-        let result = String::from_utf8(writer).unwrap();
-        let expected = "├──  sub_dir\n│   ├── 󰈙 file3.txt\n│   └── 󰈙 file4.txt\n├── 󰈙 .hidden.txt\n├── 󰈙 file1.txt\n└── 󰈙 file2.txt\n";
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_match_pattern() {
-        let mut opts: Opts = Default::default();
-        opts.pattern = Some(glob::Pattern::new("*2.txt").unwrap());
-        let path = Path::new("test_dir");
-
-        let mut writer = Vec::new();
-        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
-
-        let result = String::from_utf8(writer).unwrap();
-        let expected = "└── 󰈙 file2.txt\n";
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_exclude_patterns() {
-        let mut opts: Opts = Default::default();
-        opts.exclude_patterns = vec![
-            glob::Pattern::new("*2.txt").unwrap(),
-            glob::Pattern::new("*3.txt").unwrap(),
-        ];
-        let path = Path::new("test_dir");
-
-        let mut writer = Vec::new();
-        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
-
-        let result = String::from_utf8(writer).unwrap();
-        let expected = "├──  sub_dir\n│   └── 󰈙 file4.txt\n└── 󰈙 file1.txt\n";
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_max_level() {
-        let mut opts: Opts = Default::default();
-        opts.level = Some(1);
-        let path = Path::new("test_dir");
-
-        let mut writer = Vec::new();
-        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
-
-        let result = String::from_utf8(writer).unwrap();
-        let expected = "├──  sub_dir\n├── 󰈙 file1.txt\n└── 󰈙 file2.txt\n";
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_ascii() {
-        let mut opts: Opts = Default::default();
-        opts.ascii = true;
-        let path = Path::new("test_dir");
-
-        let mut writer = Vec::new();
-        let _ = climb_tree(&mut writer, path, &opts, 0, &mut (0, 0), &[]);
-
-        let result = String::from_utf8(writer).unwrap();
-        let expected = "|--- sub_dir\n|   |---󰈙 file3.txt\n|   +---󰈙 file4.txt\n|---󰈙 file1.txt\n+---󰈙 file2.txt\n";
-        assert_eq!(result, expected);
-    }
+    Ok(())
 }

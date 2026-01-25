@@ -103,33 +103,3 @@ pub fn format_date(time: SystemTime) -> String {
         Err(_) => String::from("Unknown date"),
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_format_permissions() {
-        let file_perm = format_permissions(0o644, false);
-        let folder_perm = format_permissions(0o755, true);
-        assert_eq!(file_perm, String::from("[-rw-r--r--]"));
-        assert_eq!(folder_perm, String::from("[drwxr-xr-x]"));
-    }
-
-    #[test]
-    fn test_format_file_size() {
-        assert_eq!(format_file_size(0), String::from("0 B"));
-        assert_eq!(format_file_size(999), String::from("999 B"));
-        assert_eq!(format_file_size(2048), String::from("2.0 KB"));
-        assert_eq!(format_file_size(2560), String::from("2.5 KB"));
-        assert_eq!(format_file_size(2690), String::from("2.6 KB"));
-        assert_eq!(format_file_size(1048576), String::from("1.0 MB"));
-        assert_eq!(format_file_size(3365930), String::from("3.2 MB"));
-    }
-
-    #[test]
-    fn test_format_date() {
-        let date = UNIX_EPOCH + std::time::Duration::from_secs(69696969);
-        assert_eq!(format_date(date), "1972-03-17 16:16:09");
-    }
-}

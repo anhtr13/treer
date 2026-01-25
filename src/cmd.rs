@@ -1,3 +1,3 @@
 pub mod root;
-mod traversal;
-mod utils;
+pub mod traversal;
+pub mod utils;
