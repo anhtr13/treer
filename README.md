@@ -1,6 +1,9 @@
 # Treer
 
-A simple tree command to learn the Rust programming language.
+A simple tree command written in Rust with some interesting features:
+
+- [x] Matching directories with specific pattern (-P or --pattern flag).
+- [x] Highlight all directories that match that pattern.
 
 ![screenshot](./screenshot.png)
 

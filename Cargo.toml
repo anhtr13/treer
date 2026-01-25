@@ -11,5 +11,6 @@ homepage = "https://github.com/anhtr13/treer"
 repository = "https://github.com/anhtr13/treer"
 
 [dependencies]
+ansi_term = "0.12.1"
 clap = { version = "4.5.54", features = ["derive"] }
 glob = "0.3.3"

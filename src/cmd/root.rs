@@ -117,5 +117,5 @@ pub fn run() -> io::Result<()> {
     })?;
 
     let root_path = Path::new(&cmd.path);
-    print_tree(&root_path, &opts)
+    print_tree(root_path, &opts)
 }

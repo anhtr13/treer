@@ -1,6 +1,6 @@
 use std::time::UNIX_EPOCH;
 
-use treer::cmd::utils::{format_date, format_file_size, format_permissions};
+use treer::cmd::display::{format_date, format_file_size, format_permissions};
 
 #[test]
 fn test_format_permissions() {
