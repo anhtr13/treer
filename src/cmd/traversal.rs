@@ -94,7 +94,7 @@ fn traverse_directory(
     furthest_highlighted_ancestor: usize,
     stats: &mut (u64, u64),
     indent_state: &[bool],
-) -> Result<bool> {
+) -> Result<()> {
     let mut entries_info: Vec<EntryInfo> = read_dir(path)?
         .filter_map(Result::ok)
         .filter(|entry| display_entries.contains(&entry.path().display().to_string()))
@@ -138,7 +138,6 @@ fn traverse_directory(
     entries_info.append(&mut dirs);
     entries_info.append(&mut files);
 
-    let mut found_content = false;
     let last_idx = entries_info.len().saturating_sub(1);
     for (idx, info) in entries_info.into_iter().enumerate() {
         let entry = info.entry;
@@ -162,7 +161,6 @@ fn traverse_directory(
 
         writeln!(writer, "{line}")?;
         stats.1 += 1;
-        found_content = true;
 
         if entry.file_type()?.is_dir() {
             stats.0 += 1;
@@ -182,7 +180,7 @@ fn traverse_directory(
             )?;
         }
     }
-    Ok(found_content)
+    Ok(())
 }
 
 pub fn print_tree(path: &Path, opts: &Opts) -> Result<()> {

@@ -42,13 +42,14 @@ fn test_print_hidden() {
 │   ├──  sub-dir-lv2
 │   │   ├──  sub-dir-lv3
 │   │   │   └── 󰈔 file5.abc
+│   │   ├── 󰈙 .hidden2.txt
 │   │   └── 󰈔 file4
 │   └── 󱁻 file3.toml
 ├── 󱆄 .hidden.lock
 ├── 󰈙 file1.md
 └── 󰈙 file2.txt
 
-4 directories, 10 files
+4 directories, 11 files
 "#;
     assert_eq!(result, expected);
 }

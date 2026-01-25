@@ -2,8 +2,8 @@
 
 A simple tree command written in Rust with some interesting features:
 
-- [x] Matching directories with specific pattern (-P or --pattern flag).
-- [x] Highlight all directories that match that pattern.
+- [x] Display directories that match a specific pattern and all their subdirectories.
+- [x] Highlight all matched directory names and highlight the indentation of all their subdirectories.
 
 ![screenshot](./screenshot.png)
 
@@ -31,18 +31,18 @@ A simple tree command written in Rust with some interesting features:
 
 **Options:**
 
-| Short | Long                | Description                                                                          |
-| ----- | ------------------- | ------------------------------------------------------------------------------------ |
-| -a    | --all               | Include hidden files.                                                                |
-| -A    | --ascii             | Use ascii characters to indent.                                                      |
-| -d    | --directories       | List directories only.                                                               |
-| -D    | --date              | Print last modification date.                                                        |
-| -f    | --full              | Print full path prefix                                                               |
-| -L    | --level <LEVEL>     | Descend only level directories deep.                                                 |
-| -i    | --no-indent         | Disable indentation.                                                                 |
-| -I    | --exclude <EXCLUDE> | Ignore files/folders that match the wild-card pattern. May have multiple -I options. |
-| -s    | --size              | Print file size.                                                                     |
-| -p    | --permissions       | Print permissions.                                                                   |
-| -P    | --pattern <PATTERN> | List only files/folders that match the wild-card pattern.                            |
-| -t    | --sort-by-time      | Sort by last modification time.                                                      |
-| -h    | --help              | Print help                                                                           |
+| Short | Long                | Description                                                                        |
+| ----- | ------------------- | ---------------------------------------------------------------------------------- |
+| -a    | --all               | Include hidden files.                                                              |
+| -A    | --ascii             | Use ascii characters to indent.                                                    |
+| -d    | --directories       | List directories only.                                                             |
+| -D    | --date              | Print last modification date.                                                      |
+| -f    | --full              | Print full path prefix                                                             |
+| -L    | --level <LEVEL>     | Descend only level directories deep.                                               |
+| -i    | --no-indent         | Disable indentation.                                                               |
+| -I    | --exclude <EXCLUDE> | Ignore directories that match the wild-card pattern. May have multiple -I options. |
+| -s    | --size              | Print file size.                                                                   |
+| -p    | --permissions       | Print permissions.                                                                 |
+| -P    | --pattern <PATTERN> | List only directories that match the wild-card pattern and their subdirectories.   |
+| -t    | --sort-by-time      | Sort by last modification time.                                                    |
+| -h    | --help              | Print help                                                                         |
