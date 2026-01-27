@@ -133,13 +133,29 @@ pub fn format_entry_line(
         line.push(' ');
     }
 
+    if opts.last_modify {
+        match metadata.modified() {
+            Ok(mod_time) => {
+                let date_str = format!("[{}] ", format_date(mod_time));
+                line.push_str(&date_str);
+            }
+            Err(e) => {
+                eprintln!(
+                    "Warning: Could not get modification date for {:?}: {}",
+                    entry.path(),
+                    e
+                );
+            }
+        }
+    }
+
     if !opts.no_indent && !indent_state.is_empty() {
-        for (lv, &is_parent_last) in indent_state.iter().enumerate() {
+        for (indent_level, &is_parent_last) in indent_state.iter().enumerate() {
             if is_parent_last {
                 line.push_str("    ");
             } else {
                 let vertical_line = if opts.ascii { "|   " } else { "│   " };
-                if lv > furthest_highlighted_ancestor {
+                if furthest_highlighted_ancestor < indent_level {
                     line.push_str(&Red.paint(vertical_line).to_string());
                 } else {
                     line.push_str(vertical_line);
@@ -199,22 +215,6 @@ pub fn format_entry_line(
         let size = metadata.len();
         let size_str = format!(" ({})", format_file_size(size));
         line.push_str(&size_str);
-    }
-
-    if opts.last_modify {
-        match metadata.modified() {
-            Ok(mod_time) => {
-                let date_str = format!(" [{}]", format_date(mod_time));
-                line.push_str(&date_str);
-            }
-            Err(e) => {
-                eprintln!(
-                    "Warning: Could not get modification date for {:?}: {}",
-                    entry.path(),
-                    e
-                );
-            }
-        }
     }
 
     Ok(line)
