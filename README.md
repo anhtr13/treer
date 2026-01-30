@@ -2,10 +2,12 @@
 
 A simple tree command written in Rust with some interesting features:
 
-- [x] Display directories that match a specific pattern and all their subdirectories.
-- [x] Highlight all matched directory names and highlight the indentation of all their subdirectories.
+- [x] Display directories that match a specific pattern and all their contents.
+- [x] Highlight all matched directory names and all their subdirectories.
 
-![screenshot](./screenshot.png)
+![screenshot_1](./screenshot_1.png)
+
+![screenshot_2](./screenshot_2.png)
 
 ## Installation
 
