@@ -17,7 +17,7 @@ fn find_display_entries(
     root: &DirEntry,
     opts: &Opts,
     depth: usize,
-    ancestors_matched_pattern: bool,
+    has_ancestors_matched_pattern: bool,
     display_entries: &mut HashSet<String>,
     highlight_entries: &mut HashSet<String>,
 ) -> bool {
@@ -46,16 +46,20 @@ fn find_display_entries(
     }
 
     let mut should_display = true;
-    let mut matched_pattern = ancestors_matched_pattern;
+    let mut matched_patterns = has_ancestors_matched_pattern;
 
-    if let Some(pattern) = &opts.pattern {
-        if !name.is_some_and(|name| pattern.matches(name)) {
-            // if name is not match pattern but ancestors are matched pattern => still display
-            should_display = ancestors_matched_pattern;
-        } else {
-            // if current entry matched pattern => highlight current entry
-            matched_pattern = true;
-            highlight_entries.insert(path.display().to_string());
+    if !opts.patterns.is_empty() {
+        for pattern in opts.patterns.iter() {
+            if name.is_some_and(|name| pattern.matches(name)) {
+                // if current entry matched pattern => highlight current entry
+                matched_patterns = true;
+                highlight_entries.insert(path.display().to_string());
+                break;
+            }
+        }
+        if !matched_patterns {
+            // if name is not match any patterns but has an ancestor that matched => still display
+            should_display = has_ancestors_matched_pattern;
         }
     }
 
@@ -69,7 +73,7 @@ fn find_display_entries(
                 &dir,
                 opts,
                 depth + 1,
-                matched_pattern,
+                matched_patterns,
                 display_entries,
                 highlight_entries,
             );
