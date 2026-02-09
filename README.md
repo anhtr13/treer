@@ -14,12 +14,19 @@ Another version of the tree command with some additional tweaks:
 - **Prequisite:** Rust and Cargo installed
 
 - **Install:**
+  - From git repo
 
-  ```sh
-  git clone https://github.com/anhtr13/treer
-  cd treer
-  cargo install --path .
-  ```
+    ```sh
+    git clone https://github.com/anhtr13/treer
+    cd treer
+    cargo install --path .
+    ```
+
+  - Or via cargo
+
+    ```sh
+    cargo install treer
+    ```
 
 ## Usage
 

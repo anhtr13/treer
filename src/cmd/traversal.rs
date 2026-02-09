@@ -13,17 +13,7 @@ struct EntryInfo {
     last_modify: Result<SystemTime>,
 }
 
-fn find_display_entries(
-    root: &DirEntry,
-    opts: &Opts,
-    depth: usize,
-    has_ancestors_matched: bool,
-    display_entries: &mut HashSet<String>,
-    highlight_entries: &mut HashSet<String>,
-) -> bool {
-    let path = root.path();
-    let name = path.file_name().and_then(|name| name.to_str());
-
+fn check_valid_entry(path: &Path, name: Option<&str>, opts: &Opts, depth: usize) -> bool {
     let is_hidden = name.map(|name| name.starts_with('.')).unwrap_or(false);
     if !opts.show_hidden && is_hidden {
         return false;
@@ -43,6 +33,23 @@ fn find_display_entries(
         if name.is_some_and(|name| exclude_pattern.matches(name)) {
             return false;
         }
+    }
+    true
+}
+
+fn find_display_entries(
+    root: &DirEntry,
+    opts: &Opts,
+    depth: usize,
+    has_ancestors_matched: bool,
+    display_entries: &mut HashSet<String>,
+    highlight_entries: &mut HashSet<String>,
+) -> bool {
+    let path = root.path();
+    let name = path.file_name().and_then(|name| name.to_str());
+
+    if !check_valid_entry(&path, name, opts, depth) {
+        return false;
     }
 
     let mut should_display = true;
@@ -80,7 +87,7 @@ fn find_display_entries(
         });
     }
 
-    if should_display {
+    if should_display && !opts.patterns.is_empty() {
         display_entries.insert(path.display().to_string());
     }
 
@@ -101,7 +108,18 @@ fn traverse_directory(
 ) -> Result<()> {
     let mut entries_info: Vec<EntryInfo> = read_dir(path)?
         .filter_map(Result::ok)
-        .filter(|entry| display_entries.contains(&entry.path().display().to_string()))
+        .filter(|entry| {
+            if opts.patterns.is_empty() {
+                // If no -P is specified, don't use pre-process
+                // Child of current directory => depth + 1
+                let path = entry.path();
+                let name = path.file_name().and_then(|name| name.to_str());
+                check_valid_entry(&path, name, opts, depth + 1)
+            } else {
+                // Use pre process set to filter
+                display_entries.contains(&entry.path().display().to_string())
+            }
+        })
         .map(|entry| {
             let last_modify = entry.metadata().and_then(|m| m.modified());
             if let Err(e) = &last_modify {
@@ -193,26 +211,6 @@ pub fn print_tree(path: &Path, opts: &Opts) -> Result<()> {
 }
 
 pub fn print_tree_with_writer(path: &Path, opts: &Opts, writer: &mut dyn Write) -> Result<()> {
-    let mut display_entries = HashSet::new();
-    let mut highlight_entries = HashSet::new();
-    let reader = match read_dir(path) {
-        Ok(reader) => reader,
-        Err(e) => {
-            eprintln!("Error reading directory {path:?}: {e}");
-            return Err(e);
-        }
-    };
-    reader.filter_map(Result::ok).for_each(|entry| {
-        find_display_entries(
-            &entry,
-            opts,
-            1,
-            false,
-            &mut display_entries,
-            &mut highlight_entries,
-        );
-    });
-
     let display_path = if opts.full_path {
         path.canonicalize()?.display().to_string()
     } else {
@@ -224,6 +222,31 @@ pub fn print_tree_with_writer(path: &Path, opts: &Opts, writer: &mut dyn Write) 
 
     let mut stats = (0, 0); // count dirs, count files
     writeln!(writer, "{display_path}")?;
+
+    let mut display_entries = HashSet::new();
+    let mut highlight_entries = HashSet::new();
+    // Pre-process if -P is specified
+    if !opts.patterns.is_empty() {
+        match read_dir(path) {
+            Ok(reader) => reader,
+            Err(e) => {
+                eprintln!("Error reading directory {path:?}: {e}");
+                return Err(e);
+            }
+        }
+        .filter_map(Result::ok)
+        .for_each(|entry| {
+            find_display_entries(
+                &entry,
+                opts,
+                1,
+                false,
+                &mut display_entries,
+                &mut highlight_entries,
+            );
+        });
+    }
+
     traverse_directory(
         writer,
         path,
