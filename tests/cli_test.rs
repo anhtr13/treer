@@ -58,7 +58,7 @@ fn test_print_hidden() {
 fn test_match_pattern() {
     let path = Path::new("tests/sample-directory");
     let mut opts: Opts = Default::default();
-    opts.pattern = Some(glob::Pattern::new("*1*").unwrap());
+    opts.patterns = vec![glob::Pattern::new("*1*").unwrap()];
 
     let mut buffer = Vec::new();
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
@@ -67,12 +67,12 @@ fn test_match_pattern() {
     let expected = "sample-directory\n├── \u{1b}[1;31m\u{e5fe} sub-dir-lv1\u{1b}[0m\n│   \u{1b}[31m├── \u{1b}[0m\u{e5fe} sub-dir-lv2\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m├── \u{1b}[0m\u{e5fe} sub-dir-lv3\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0m\u{f0214} file5.abc\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0m\u{f0214} file4\n│   \u{1b}[31m└── \u{1b}[0m\u{f107b} file3.toml\n└── \u{1b}[1;31m\u{f0219} file1.md\u{1b}[0m\n\n3 directories, 7 files\n";
     assert_eq!(result, expected);
 
-    opts.pattern = Some(glob::Pattern::new("*lv*").unwrap());
+    opts.patterns.push(glob::Pattern::new("*lv*").unwrap());
     buffer = Vec::new();
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 
     let result = String::from_utf8(buffer).expect("Not valid UTF-8");
-    let expected = "sample-directory\n└── \u{1b}[1;31m\u{e5fe} sub-dir-lv1\u{1b}[0m\n    \u{1b}[31m├── \u{1b}[0m\u{1b}[1;31m\u{e5fe} sub-dir-lv2\u{1b}[0m\n    \u{1b}[31m│   \u{1b}[0m\u{1b}[31m├── \u{1b}[0m\u{1b}[1;31m\u{e5fe} sub-dir-lv3\u{1b}[0m\n    \u{1b}[31m│   \u{1b}[0m\u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0m\u{f0214} file5.abc\n    \u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0m\u{f0214} file4\n    \u{1b}[31m└── \u{1b}[0m\u{f107b} file3.toml\n\n3 directories, 6 files\n";
+    let expected = "sample-directory\n├── \u{1b}[1;31m\u{e5fe} sub-dir-lv1\u{1b}[0m\n│   \u{1b}[31m├── \u{1b}[0m\u{1b}[1;31m\u{e5fe} sub-dir-lv2\u{1b}[0m\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m├── \u{1b}[0m\u{1b}[1;31m\u{e5fe} sub-dir-lv3\u{1b}[0m\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0m\u{f0214} file5.abc\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0m\u{f0214} file4\n│   \u{1b}[31m└── \u{1b}[0m\u{f107b} file3.toml\n└── \u{1b}[1;31m\u{f0219} file1.md\u{1b}[0m\n\n3 directories, 7 files\n";
     assert_eq!(result, expected);
 }
 
@@ -182,7 +182,7 @@ fn test_combination() {
 "#;
     assert_eq!(result, expected);
 
-    opts.pattern = Some(glob::Pattern::new("*lv*").unwrap());
+    opts.patterns = vec![glob::Pattern::new("*lv*").unwrap()];
     buffer = Vec::new();
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 

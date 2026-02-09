@@ -17,7 +17,7 @@ pub struct Opts {
     pub no_indent: bool,
     pub print_size: bool,
     pub print_permissions: bool,
-    pub pattern: Option<Pattern>,
+    pub patterns: Vec<Pattern>,
     pub sort_by_time: bool,
 }
 
@@ -26,7 +26,7 @@ pub struct Cmd {
     #[arg(default_value = ".", help = "Path to the directory.")]
     pub path: String,
 
-    #[arg(short = 'a', long = "all", help = "Include hidden files.")]
+    #[arg(short = 'a', long = "all", help = "All (include hidden) directories.")]
     pub show_hidden: bool,
 
     #[arg(short = 'A', long = "ascii", help = "Use ascii characters to indent.")]
@@ -54,7 +54,7 @@ pub struct Cmd {
     #[arg(
         short = 'I',
         long = "exclude",
-        help = "Ignore files/folders that match the wild-card pattern. May have multiple -I options."
+        help = "Ignore files/folders that match the wild-card pattern. May have multiple -I."
     )]
     pub exclude: Vec<String>,
 
@@ -67,15 +67,11 @@ pub struct Cmd {
     #[arg(
         short = 'P',
         long = "pattern",
-        help = "List only files/folders that match the wild-card pattern."
+        help = "List only directories that match the wild-card pattern. May have multiple -P."
     )]
-    pub pattern: Option<String>,
+    pub pattern: Vec<String>,
 
-    #[arg(
-        short = 't',
-        long = "sort-by-time",
-        help = "Sort by last modification time."
-    )]
+    #[arg(short = 't', long = "time", help = "Sort by last modification time.")]
     pub sort_by_time: bool,
 }
 
@@ -84,11 +80,11 @@ fn parse_glob_pattern(s: &str) -> Result<Pattern, String> {
 }
 
 fn cmd_to_opts(cmd: &Cmd) -> Result<Opts, String> {
-    let glob_pattern: Option<Pattern> = cmd
+    let glob_patterns: Vec<Pattern> = cmd
         .pattern
-        .as_ref()
+        .iter()
         .map(|p| parse_glob_pattern(p))
-        .transpose()?;
+        .collect::<Result<Vec<_>, _>>()?;
     let exclude_patterns: Vec<Pattern> = cmd
         .exclude
         .iter()
@@ -105,7 +101,7 @@ fn cmd_to_opts(cmd: &Cmd) -> Result<Opts, String> {
         level: cmd.level,
         no_indent: cmd.no_indent,
         print_size: cmd.print_size,
-        pattern: glob_pattern,
+        patterns: glob_patterns,
         sort_by_time: cmd.sort_by_time,
     })
 }

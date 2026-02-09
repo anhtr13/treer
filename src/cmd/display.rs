@@ -119,7 +119,7 @@ pub fn format_entry_line(
     indent_state: &[bool],
     is_last: bool,
     highlight: bool,
-    furthest_highlighted_ancestor: usize,
+    first_ancestor_matched: usize,
 ) -> Result<String> {
     let path = entry.path();
     let mut line = String::new();
@@ -155,7 +155,7 @@ pub fn format_entry_line(
                 line.push_str("    ");
             } else {
                 let vertical_line = if opts.ascii { "|   " } else { "│   " };
-                if furthest_highlighted_ancestor < indent_level {
+                if first_ancestor_matched < indent_level {
                     line.push_str(&Red.paint(vertical_line).to_string());
                 } else {
                     line.push_str(vertical_line);
@@ -172,7 +172,7 @@ pub fn format_entry_line(
         (false, false, false) => "├── ",
     };
 
-    if furthest_highlighted_ancestor < indent_state.len() {
+    if first_ancestor_matched < indent_state.len() {
         line.push_str(&Red.paint(line_prefix).to_string());
     } else {
         line.push_str(line_prefix);

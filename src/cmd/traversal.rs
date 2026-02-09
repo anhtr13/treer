@@ -17,7 +17,7 @@ fn find_display_entries(
     root: &DirEntry,
     opts: &Opts,
     depth: usize,
-    ancestors_matched_pattern: bool,
+    has_ancestors_matched: bool,
     display_entries: &mut HashSet<String>,
     highlight_entries: &mut HashSet<String>,
 ) -> bool {
@@ -46,16 +46,20 @@ fn find_display_entries(
     }
 
     let mut should_display = true;
-    let mut matched_pattern = ancestors_matched_pattern;
+    let mut this_dir_matches = has_ancestors_matched;
 
-    if let Some(pattern) = &opts.pattern {
-        if !name.is_some_and(|name| pattern.matches(name)) {
-            // if name is not match pattern but ancestors are matched pattern => still display
-            should_display = ancestors_matched_pattern;
-        } else {
-            // if current entry matched pattern => highlight current entry
-            matched_pattern = true;
-            highlight_entries.insert(path.display().to_string());
+    if !opts.patterns.is_empty() {
+        for pattern in opts.patterns.iter() {
+            if name.is_some_and(|name| pattern.matches(name)) {
+                // if current entry matched pattern => highlight current entry
+                this_dir_matches = true;
+                highlight_entries.insert(path.display().to_string());
+                break;
+            }
+        }
+        if !this_dir_matches {
+            // if name is not match any patterns but has an ancestor that matched => still display
+            should_display = has_ancestors_matched;
         }
     }
 
@@ -69,7 +73,7 @@ fn find_display_entries(
                 &dir,
                 opts,
                 depth + 1,
-                matched_pattern,
+                this_dir_matches,
                 display_entries,
                 highlight_entries,
             );
@@ -89,9 +93,9 @@ fn traverse_directory(
     path: &Path,
     opts: &Opts,
     display_entries: &HashSet<String>,
-    matched_entries: &HashSet<String>,
+    highlight_entries: &HashSet<String>,
     depth: usize,
-    furthest_highlighted_ancestor: usize,
+    first_matched_ancestor: usize,
     stats: &mut (u64, u64),
     indent_state: &[bool],
 ) -> Result<()> {
@@ -143,11 +147,11 @@ fn traverse_directory(
         let entry = info.entry;
         let path = entry.path();
         let is_last_entry = idx == last_idx;
-        let should_highlight = matched_entries.contains(&path.display().to_string());
-        let furthest_highlighted_ancestor = if should_highlight {
-            furthest_highlighted_ancestor.min(depth)
+        let should_highlight = highlight_entries.contains(&path.display().to_string());
+        let first_matched_ancestor = if should_highlight {
+            first_matched_ancestor.min(depth)
         } else {
-            furthest_highlighted_ancestor
+            first_matched_ancestor
         };
 
         let line = format_entry_line(
@@ -156,7 +160,7 @@ fn traverse_directory(
             indent_state,
             is_last_entry,
             should_highlight,
-            furthest_highlighted_ancestor,
+            first_matched_ancestor,
         )?;
 
         writeln!(writer, "{line}")?;
@@ -172,9 +176,9 @@ fn traverse_directory(
                 &path,
                 opts,
                 display_entries,
-                matched_entries,
+                highlight_entries,
                 depth + 1,
-                furthest_highlighted_ancestor,
+                first_matched_ancestor,
                 stats,
                 &next_indent_state,
             )?;
