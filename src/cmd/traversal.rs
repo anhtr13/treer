@@ -116,7 +116,7 @@ fn traverse_directory(
                 let name = path.file_name().and_then(|name| name.to_str());
                 check_valid_entry(&path, name, opts, depth + 1)
             } else {
-                // Use pre process set to filter
+                // Use pre-process set to filter
                 display_entries.contains(&entry.path().display().to_string())
             }
         })
@@ -182,7 +182,6 @@ fn traverse_directory(
         )?;
 
         writeln!(writer, "{line}")?;
-        stats.1 += 1;
 
         if entry.file_type()?.is_dir() {
             stats.0 += 1;
@@ -200,6 +199,8 @@ fn traverse_directory(
                 stats,
                 &next_indent_state,
             )?;
+        } else {
+            stats.1 += 1;
         }
     }
     Ok(())

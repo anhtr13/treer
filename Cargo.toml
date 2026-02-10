@@ -1,6 +1,6 @@
 [package]
 name = "treer"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["anhtr13 <anhtr13@proton.me>"]
 description = "Simple tree command written in rust."
