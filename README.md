@@ -1,9 +1,9 @@
 # Treer
 
-Another version of the tree command with some additional tweaks:
+Another version of the tree command with some additional tweaks to better support recursive searching:
 
 - [x] Display only directories that match some wild-card patterns and reveal all their contents.
-- [x] Highlight all matched directory names and all their subdirectories.
+- [x] Highlight all matching directory names and all prefixes of their subdirectories.
 
 ![screenshot_1](./screenshot_1.png)
 

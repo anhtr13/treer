@@ -2,11 +2,15 @@ use std::{
     collections::HashSet,
     fs::{DirEntry, read_dir},
     io::{BufWriter, Result, Write, stdout},
+    os::unix::fs::PermissionsExt,
     path::Path,
     time::SystemTime,
 };
 
-use crate::cmd::{display::format_entry_line, root::Opts};
+use crate::cmd::{
+    display::{format_date, format_entry_line, format_permissions},
+    root::Opts,
+};
 
 struct EntryInfo {
     entry: DirEntry,
@@ -212,16 +216,41 @@ pub fn print_tree(path: &Path, opts: &Opts) -> Result<()> {
 }
 
 pub fn print_tree_with_writer(path: &Path, opts: &Opts, writer: &mut dyn Write) -> Result<()> {
-    let display_path = if opts.full_path {
-        path.canonicalize()?.display().to_string()
+    let metadata = std::fs::metadata(path)?;
+    let mut display_path = String::new();
+
+    if opts.print_permissions {
+        let mode = metadata.permissions().mode();
+        let perms_str = format_permissions(mode, metadata.file_type().is_dir());
+        display_path.push_str(&perms_str);
+        display_path.push(' ');
+    }
+
+    if opts.last_modify {
+        match metadata.modified() {
+            Ok(mod_time) => {
+                let date_str = format!("[{}] ", format_date(mod_time));
+                display_path.push_str(&date_str);
+            }
+            Err(e) => {
+                eprintln!(
+                    "Warning: Could not get modification date for {:?}: {}",
+                    path, e
+                );
+            }
+        }
+    }
+
+    if opts.full_path {
+        display_path.push_str(&path.canonicalize()?.display().to_string());
     } else {
-        path.file_name()
-            .and_then(|name| name.to_str())
-            .unwrap_or(".")
-            .to_string()
+        display_path.push_str(
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("."),
+        );
     };
 
-    let mut stats = (0, 0); // count dirs, count files
     writeln!(writer, "{display_path}")?;
 
     let mut display_entries = HashSet::new();
@@ -247,6 +276,8 @@ pub fn print_tree_with_writer(path: &Path, opts: &Opts, writer: &mut dyn Write) 
             );
         });
     }
+
+    let mut stats = (0, 0); // (dirs, files)
 
     traverse_directory(
         writer,
