@@ -11,18 +11,18 @@ fn test_print_default() {
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 
     let result = String::from_utf8(buffer).expect("Not valid UTF-8");
-    let expected = r#"sample-directory
-├──  sub-dir-lv1
-│   ├──  sub-dir-lv2
-│   │   ├──  sub-dir-lv3
-│   │   │   └── 󰈔 file5.abc
-│   │   └── 󰈔 file4
-│   └── 󱁻 file3.toml
-├── 󰈙 file1.md
-└── 󰈙 file2.txt
+    let expected = "sample-directory
+├── sub-dir-lv1
+│   ├── sub-dir-lv2
+│   │   ├── sub-dir-lv3
+│   │   │   └── file5.abc
+│   │   └── file4
+│   └── file3.toml
+├── file1.md
+└── file2.txt
 
 3 directories, 5 files
-"#;
+";
     assert_eq!(result, expected);
 }
 
@@ -36,21 +36,21 @@ fn test_print_hidden() {
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 
     let result = String::from_utf8(buffer).expect("Not valid UTF-8");
-    let expected = r#"sample-directory
-├──  .hidden
-├──  sub-dir-lv1
-│   ├──  sub-dir-lv2
-│   │   ├──  sub-dir-lv3
-│   │   │   └── 󰈔 file5.abc
-│   │   ├── 󰈙 .hidden2.txt
-│   │   └── 󰈔 file4
-│   └── 󱁻 file3.toml
-├── 󱆄 .hidden.lock
-├── 󰈙 file1.md
-└── 󰈙 file2.txt
+    let expected = "sample-directory
+├── .hidden
+├── sub-dir-lv1
+│   ├── sub-dir-lv2
+│   │   ├── sub-dir-lv3
+│   │   │   └── file5.abc
+│   │   ├── .hidden2.txt
+│   │   └── file4
+│   └── file3.toml
+├── .hidden.lock
+├── file1.md
+└── file2.txt
 
 4 directories, 7 files
-"#;
+";
     assert_eq!(result, expected);
 }
 
@@ -64,15 +64,36 @@ fn test_match_pattern() {
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 
     let result = String::from_utf8(buffer).expect("Not valid UTF-8");
-    let expected = "sample-directory\n├── \u{1b}[1;31m\u{e5fe} sub-dir-lv1\u{1b}[0m\n│   \u{1b}[31m├── \u{1b}[0m\u{e5fe} sub-dir-lv2\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m├── \u{1b}[0m\u{e5fe} sub-dir-lv3\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0m\u{f0214} file5.abc\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0m\u{f0214} file4\n│   \u{1b}[31m└── \u{1b}[0m\u{f107b} file3.toml\n└── \u{1b}[1;31m\u{f0219} file1.md\u{1b}[0m\n\n3 directories, 4 files\n";
+    let expected = "sample-directory
+├── sub-dir-lv1
+│   ├── sub-dir-lv2
+│   │   ├── sub-dir-lv3
+│   │   │   └── file5.abc
+│   │   └── file4
+│   └── file3.toml
+└── file1.md
+
+3 directories, 4 files
+";
     assert_eq!(result, expected);
 
     opts.patterns.push(glob::Pattern::new("*lv*").unwrap());
+    opts.highlight = true;
     buffer = Vec::new();
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 
     let result = String::from_utf8(buffer).expect("Not valid UTF-8");
-    let expected = "sample-directory\n├── \u{1b}[1;31m\u{e5fe} sub-dir-lv1\u{1b}[0m\n│   \u{1b}[31m├── \u{1b}[0m\u{1b}[1;31m\u{e5fe} sub-dir-lv2\u{1b}[0m\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m├── \u{1b}[0m\u{1b}[1;31m\u{e5fe} sub-dir-lv3\u{1b}[0m\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0m\u{f0214} file5.abc\n│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0m\u{f0214} file4\n│   \u{1b}[31m└── \u{1b}[0m\u{f107b} file3.toml\n└── \u{1b}[1;31m\u{f0219} file1.md\u{1b}[0m\n\n3 directories, 4 files\n";
+    let expected = "sample-directory
+├── \u{1b}[1;31msub-dir-lv1\u{1b}[0m
+│   \u{1b}[31m├── \u{1b}[0m\u{1b}[1;31msub-dir-lv2\u{1b}[0m
+│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m├── \u{1b}[0m\u{1b}[1;31msub-dir-lv3\u{1b}[0m
+│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0mfile5.abc
+│   \u{1b}[31m│   \u{1b}[0m\u{1b}[31m└── \u{1b}[0mfile4
+│   \u{1b}[31m└── \u{1b}[0mfile3.toml
+└── \u{1b}[1;31mfile1.md\u{1b}[0m
+
+3 directories, 4 files
+";
     assert_eq!(result, expected);
 }
 
@@ -86,13 +107,13 @@ fn test_exclude_patterns() {
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 
     let result = String::from_utf8(buffer).expect("Not valid UTF-8");
-    let expected = r#"sample-directory
-├──  sub-dir-lv1
-│   └── 󱁻 file3.toml
-└── 󰈙 file1.md
+    let expected = "sample-directory
+├── sub-dir-lv1
+│   └── file3.toml
+└── file1.md
 
 1 directory, 2 files
-"#;
+";
     assert_eq!(result, expected);
 
     opts.exclude_patterns = vec![
@@ -103,14 +124,14 @@ fn test_exclude_patterns() {
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 
     let result = String::from_utf8(buffer).expect("Not valid UTF-8");
-    let expected = r#"sample-directory
-├──  sub-dir-lv1
-│   └──  sub-dir-lv2
-│       └── 󰈔 file4
-└── 󰈙 file1.md
+    let expected = "sample-directory
+├── sub-dir-lv1
+│   └── sub-dir-lv2
+│       └── file4
+└── file1.md
 
 2 directories, 2 files
-"#;
+";
     assert_eq!(result, expected);
 }
 
@@ -124,17 +145,17 @@ fn test_max_level() {
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 
     let result = String::from_utf8(buffer).expect("Not valid UTF-8");
-    let expected = r#"sample-directory
-├──  sub-dir-lv1
-│   ├──  sub-dir-lv2
-│   │   ├──  sub-dir-lv3
-│   │   └── 󰈔 file4
-│   └── 󱁻 file3.toml
-├── 󰈙 file1.md
-└── 󰈙 file2.txt
+    let expected = "sample-directory
+├── sub-dir-lv1
+│   ├── sub-dir-lv2
+│   │   ├── sub-dir-lv3
+│   │   └── file4
+│   └── file3.toml
+├── file1.md
+└── file2.txt
 
 3 directories, 4 files
-"#;
+";
     assert_eq!(result, expected);
 
     opts.level = Some(2);
@@ -142,15 +163,15 @@ fn test_max_level() {
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 
     let result = String::from_utf8(buffer).expect("Not valid UTF-8");
-    let expected = r#"sample-directory
-├──  sub-dir-lv1
-│   ├──  sub-dir-lv2
-│   └── 󱁻 file3.toml
-├── 󰈙 file1.md
-└── 󰈙 file2.txt
+    let expected = "sample-directory
+├── sub-dir-lv1
+│   ├── sub-dir-lv2
+│   └── file3.toml
+├── file1.md
+└── file2.txt
 
 2 directories, 3 files
-"#;
+";
     assert_eq!(result, expected);
 }
 
@@ -170,23 +191,31 @@ fn test_combination() {
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 
     let result = String::from_utf8(buffer).expect("Not valid UTF-8");
-    let expected = r#"sample-directory
-|--- .hidden
-|--- sub-dir-lv1
-|   +--- sub-dir-lv2
-|       +---󰈔 file4
-|---󱆄 .hidden.lock
-+---󰈙 file1.md
+    let expected = "sample-directory
+|---.hidden
+|---sub-dir-lv1
+|   +---sub-dir-lv2
+|       +---file4
+|---.hidden.lock
++---file1.md
 
 3 directories, 3 files
-"#;
+";
     assert_eq!(result, expected);
 
     opts.patterns = vec![glob::Pattern::new("*lv*").unwrap()];
+    opts.highlight = true;
+    opts.icons = true;
     buffer = Vec::new();
     let _ = print_tree_with_writer(path, &opts, &mut buffer);
 
     let result = String::from_utf8(buffer).expect("Not valid UTF-8");
-    let expected = "sample-directory\n+---\u{1b}[1;31m\u{e5fe} sub-dir-lv1\u{1b}[0m\n    \u{1b}[31m+---\u{1b}[0m\u{1b}[1;31m\u{e5fe} sub-dir-lv2\u{1b}[0m\n        \u{1b}[31m+---\u{1b}[0m\u{f0214} file4\n\n2 directories, 1 file\n";
+    let expected = "sample-directory
++---\u{1b}[1;31m\u{e5fe} sub-dir-lv1\u{1b}[0m
+    \u{1b}[31m+---\u{1b}[0m\u{1b}[1;31m\u{e5fe} sub-dir-lv2\u{1b}[0m
+        \u{1b}[31m+---\u{1b}[0m\u{f0214} file4
+
+2 directories, 1 file
+";
     assert_eq!(result, expected);
 }

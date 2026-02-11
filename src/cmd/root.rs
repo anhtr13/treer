@@ -10,8 +10,10 @@ pub struct Opts {
     pub show_hidden: bool,
     pub ascii: bool,
     pub exclude_patterns: Vec<Pattern>,
-    pub full_path: bool,
     pub dir_only: bool,
+    pub full_path: bool,
+    pub highlight: bool,
+    pub icons: bool,
     pub last_modify: bool,
     pub level: Option<u32>,
     pub no_indent: bool,
@@ -38,8 +40,20 @@ pub struct Cmd {
     #[arg(short = 'D', long = "date", help = "Print last modification date.")]
     pub last_modify: bool,
 
-    #[arg(short = 'f', long = "full", help = "Print full path prefix")]
+    #[arg(short = 'f', long = "full", help = "Print full path prefix.")]
     pub full_path: bool,
+
+    #[arg(
+        long = "highlight",
+        help = "Enable highlight on matching directory and their contents."
+    )]
+    pub highlight: bool,
+
+    #[arg(
+        long = "icons",
+        help = "Enable Nerd Font icons based on file extension (need Nerd Font installed)."
+    )]
+    pub icons: bool,
 
     #[arg(
         short = 'L',
@@ -94,8 +108,10 @@ fn cmd_to_opts(cmd: &Cmd) -> Result<Opts, String> {
         show_hidden: cmd.show_hidden,
         ascii: cmd.ascii,
         exclude_patterns,
-        full_path: cmd.full_path,
         dir_only: cmd.dir_only,
+        full_path: cmd.full_path,
+        highlight: cmd.highlight,
+        icons: cmd.icons,
         print_permissions: cmd.print_permissions,
         last_modify: cmd.last_modify,
         level: cmd.level,

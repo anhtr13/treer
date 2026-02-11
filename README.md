@@ -40,18 +40,20 @@ Another version of the tree command with some additional tweaks to better suppor
 
 **Options:**
 
-| Short | Long                | Description                                                                                        |
-| ----- | ------------------- | -------------------------------------------------------------------------------------------------- |
-| -a    | --all               | Include hidden directories.                                                                        |
-| -A    | --ascii             | Use ascii characters to indent.                                                                    |
-| -d    | --directories       | List directories only.                                                                             |
-| -D    | --date              | Print last modification date.                                                                      |
-| -f    | --full              | Print full path prefix.                                                                            |
-| -L    | --level <LEVEL>     | Descend only level directories deep.                                                               |
-| -i    | --no-indent         | Disable indentation.                                                                               |
-| -I    | --exclude <EXCLUDE> | Ignore directories that match some wild-card patterns. May have multiple -I.                       |
-| -s    | --size              | Print file size.                                                                                   |
-| -p    | --permissions       | Print permissions.                                                                                 |
-| -P    | --pattern <PATTERN> | List only directories that match some wild-card patterns and their contents. May have multiple -P. |
-| -t    | --sort-by-time      | Sort by last modification time.                                                                    |
-| -h    | --help              | Print help.                                                                                        |
+| Short | Long                | Description                                                                   |
+| ----- | ------------------- | ----------------------------------------------------------------------------- |
+| -a    | --all               | All (include hidden) directories.                                             |
+| -A    | --ascii             | Use ascii characters to indent.                                               |
+| -d    | --directories       | List directories only.                                                        |
+| -D    | --date              | Print last modification date.                                                 |
+| -f    | --full              | Print full path prefix.                                                       |
+|       | --highlight         | Enable highlight on matching directory and their contents.                    |
+|       | --icons             | Enable Nerd Font icons based on file extension (need Nerd Font installed).    |
+| -L    | --level <LEVEL>     | Descend only level directories deep.                                          |
+| -i    | --no-indent         | Disable indentation.                                                          |
+| -I    | --exclude <EXCLUDE> | Ignore files/folders that match the wild-card pattern. May have multiple -I.  |
+| -s    | --size              | Print file size.                                                              |
+| -p    | --permissions       | Print permissions.                                                            |
+| -P    | --pattern <PATTERN> | List only directories that match the wild-card pattern. May have multiple -P. |
+| -t    | --time              | Sort by last modification time.                                               |
+| -h    | --help              | Print help.                                                                   |

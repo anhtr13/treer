@@ -41,7 +41,7 @@ fn check_valid_entry(path: &Path, name: Option<&str>, opts: &Opts, depth: usize)
     true
 }
 
-fn find_display_entries(
+fn pre_process_tree(
     root: &DirEntry,
     opts: &Opts,
     depth: usize,
@@ -64,7 +64,9 @@ fn find_display_entries(
             if name.is_some_and(|name| pattern.matches(name)) {
                 // if current entry matched pattern => highlight current entry
                 this_dir_matches = true;
-                highlight_entries.insert(path.display().to_string());
+                if opts.highlight {
+                    highlight_entries.insert(path.display().to_string());
+                }
                 break;
             }
         }
@@ -80,7 +82,7 @@ fn find_display_entries(
     {
         reader.filter_map(Result::ok).for_each(|dir| {
             // if descendants are matched pattern => still display
-            should_display |= find_display_entries(
+            should_display |= pre_process_tree(
                 &dir,
                 opts,
                 depth + 1,
@@ -266,7 +268,7 @@ pub fn print_tree_with_writer(path: &Path, opts: &Opts, writer: &mut dyn Write) 
         }
         .filter_map(Result::ok)
         .for_each(|entry| {
-            find_display_entries(
+            pre_process_tree(
                 &entry,
                 opts,
                 1,

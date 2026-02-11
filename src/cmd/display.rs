@@ -1,7 +1,8 @@
 use std::{
-    fs::DirEntry,
+    fs::{DirEntry, FileType},
     io::Result,
     os::unix::fs::PermissionsExt,
+    path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -113,6 +114,27 @@ pub fn format_date(time: SystemTime) -> String {
     }
 }
 
+pub fn format_icon(path: &Path, file_type: FileType) -> &str {
+    if file_type.is_dir() {
+        return " ";
+    }
+    if let Some(ext) = path.extension().and_then(|p| p.to_str()) {
+        let icon = match ext {
+            "png" | "jpg" | "jpeg" | "gif" | "svg" | "ico" | "tiff" | "webp" | "bmp" => "󰈟 ",
+            "mp3" | "wav" | "flac" | "aac" | "ogg" => "󰈣 ",
+            "mp4" | "avi" | "mov" | "wmv" | "flv" | "webm" | "mkv" => "󰈫 ",
+            "zip" | "rar" | "tar" | "7z" | "gz" | "xz" => " ",
+            "md" | "txt" | "xml" | "yml" | "yaml" => "󰈙 ",
+            "lock" | "key" | "pem" | "crt" | "p12" | "pfx" => "󱆄 ",
+            "toml" | "ini" | "cfg" | "conf" => "󱁻 ",
+            "json" | "csv" | "log" | "sql" => "󰱾 ",
+            &_ => "󰈔 ",
+        };
+        return icon;
+    }
+    "󰈔 "
+}
+
 pub fn format_entry_line(
     entry: &DirEntry,
     opts: &Opts,
@@ -179,24 +201,8 @@ pub fn format_entry_line(
     }
 
     let mut display_path = String::new();
-    if file_type.is_dir() {
-        display_path.push_str(" ");
-    } else if let Some(ext) = path.extension().and_then(|p| p.to_str()) {
-        match ext {
-            "png" | "jpg" | "jpeg" | "gif" | "svg" | "ico" | "tiff" | "webp" | "bmp" => {
-                display_path.push_str("󰈟 ")
-            }
-            "mp3" | "wav" | "flac" | "aac" | "ogg" => display_path.push_str("󰈣 "),
-            "mp4" | "avi" | "mov" | "wmv" | "flv" | "webm" | "mkv" => display_path.push_str("󰈫 "),
-            "zip" | "rar" | "tar" | "7z" | "gz" | "xz" => display_path.push_str(" "),
-            "md" | "txt" | "xml" | "yml" | "yaml" => display_path.push_str("󰈙 "),
-            "lock" | "key" | "pem" | "crt" | "p12" | "pfx" => display_path.push_str("󱆄 "),
-            "toml" | "ini" | "cfg" | "conf" => display_path.push_str("󱁻 "),
-            "json" | "csv" | "log" | "sql" => display_path.push_str("󰱾 "),
-            &_ => display_path.push_str("󰈔 "),
-        }
-    } else {
-        display_path.push_str("󰈔 ");
+    if opts.icons {
+        display_path.push_str(format_icon(&path, file_type));
     }
 
     if opts.full_path {
